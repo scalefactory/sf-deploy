@@ -1,0 +1,4 @@
+---
+name: vagrant
+git_repo: 'git@github.com:mitchellh/vagrant.git'
+deploy_to: /srv/vagrant
