@@ -4,6 +4,7 @@ module Deploy
 require 'fileutils'
 require 'pathname'
 require 'logger'
+require 'open3'
 
 class Application
 
@@ -25,7 +26,7 @@ class Application
             return
         end
         @logger.info("#{__method__}: Cloning git repo from #{@conf.git_repo}")
-        system( "git clone --mirror #{@conf.git_repo} #{@conf.clone_path}" )
+        logged_system( "git clone --mirror #{@conf.git_repo} #{@conf.clone_path}" )
         @logger.debug("Clearing cached git data")
         @cache = {}
     end
@@ -33,7 +34,7 @@ class Application
     def update_git_clone
         initial_git_clone
         @logger.info("#{__method__}: Fetching changes from upstream")
-        system( "cd #{@conf.clone_path} && git fetch" )
+        logged_system( "cd #{@conf.clone_path} && git fetch" )
         @cache = {}
     end
 
@@ -56,9 +57,11 @@ class Application
             raise "The deployment path #{deploy_path} already exists"
         end
 
+        @logger.info("#{__method__}: Making directory #{deploy_path}")
         FileUtils.mkdir_p( deploy_path ) 
 
-        system( "git archive #{tag} --remote=#{@conf.clone_path} | tar -C #{deploy_path} -xv" )
+        @logger.info("#{__method__}: Using 'git archive' to extract code for deploy")
+        logged_system( "git archive #{tag} --remote=#{@conf.clone_path} | tar -C #{deploy_path} -xv" )
 
         link_release( timestamp )
         clean_old_releases
@@ -66,15 +69,20 @@ class Application
     end
 
     def releases
-        Dir.glob( "#{@conf.deploy_to}/releases/*" ).map { |f|
-            Pathname.new(f).basename.to_s
+        available_releases = Dir.glob( "#{@conf.deploy_to}/releases/*" ).map { |f|
+            release = Pathname.new(f).basename.to_s
+            @logger.debug("#{__method__}: Found release: '#{release}'")
+            release
         }
     end
 
     def current_release
         begin
-            return Pathname.new( "#{@conf.deploy_to}/current" ).realpath.basename.to_s
+            current = Pathname.new( "#{@conf.deploy_to}/current" ).realpath.basename.to_s
+            @logger.info("#{__method__}: Current release read as '#{current}'")
+            return current
         rescue Errno::ENOENT
+            @logger.info("#{__method__}: No 'current' symlink")
             return nil
         end
     end
@@ -84,7 +92,9 @@ class Application
         deploy_path = get_path_for_release( release ) 
         symlink     = "#{@conf.deploy_to}/current"
 
+        @logger.info("#{__method__}: Removing old /current link")
         File.unlink( symlink )
+        @logger.info("#{__method__}: Linking #{symlink} to #{deploy_path}")
         FileUtils.ln_sf( deploy_path, symlink )
 
     end
@@ -98,6 +108,7 @@ class Application
         end
 
         old_releases.reverse.slice(0, old_releases.length - @conf.keep_releases).each do |r|
+            @logger.info("#{__method__}: Removing old release #{r}")
             FileUtils.rm_rf( get_path_for_release(r) )
         end
         
@@ -110,15 +121,48 @@ class Application
     @cache = {}
 
     def get_tags
+        @logger.info("#{__method__}: Getting tags from git")
         output = `cd #{@conf.clone_path} && git tag`
-        output.split("\n")
+        tags = output.split("\n")
+        tags.each do |t|
+            @logger.debug("#{__method__}: #{t}")
+        end
+        tags
     end
 
     def get_path_for_release( release )
         File.join( @conf.deploy_to, "releases", release )
     end
 
-end
+    def logged_system(*args)
+
+        @logger.debug("#{__method__}: #{args.join(' ')}")
+
+        stdin, stdout, stderr = Open3.popen3( args.join(' ') )
+        stdin.close
+
+        output = ''
+
+        while !stdout.eof?
+            line = stdout.readline
+            output << line
+            @logger.debug("stout: #{line}")
+        end
+
+        stdout.close
+
+        while !stderr.eof?
+            line = stderr.readline
+            @logger.debug("stderr: #{line}")
+        end
+
+        stderr.close
+
+        output
+
+    end
 
 end
-end
+
+end # module
+end # module
