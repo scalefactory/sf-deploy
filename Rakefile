@@ -20,7 +20,7 @@ class AppShim
     def method_missing(meth, *args, &block)
 
         if @app.nil?
-            $stderr.puts "You must choose an application by calling one of the application:* tasks"
+            $stderr.puts "You must choose an application by calling one of the application:* tasks first"
             exit -1
         end
 
@@ -46,6 +46,11 @@ namespace :application do
 
 end
 
+desc "Enable debugging"
+task :debug do
+    app.logger.level = Logger::DEBUG
+end
+
 
 desc "Create or update the bare git clone for the application"
 task :git_clone do
@@ -65,7 +70,6 @@ task :show_branches do
         puts b
     end
 end
-
 
 desc "Deploy a specific tag"
 task :deploy_tag, :tag do |t,args|
