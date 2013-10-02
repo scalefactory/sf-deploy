@@ -142,8 +142,10 @@ class Application
         deploy_path = get_path_for_release( release ) 
         symlink     = "#{@conf.deploy_to}/current"
 
-        @logger.info("#{__method__}: Removing old /current link")
-        File.unlink( symlink )
+        if File.exists?( symlink )
+            @logger.info("#{__method__}: Removing old /current link")
+            File.unlink( symlink )
+        end
         @logger.info("#{__method__}: Linking #{symlink} to #{deploy_path}")
         FileUtils.ln_sf( deploy_path, symlink )
 
@@ -157,7 +159,9 @@ class Application
             old_releases.delete current_release
         end
 
-        old_releases.reverse.slice(0, old_releases.length - @conf.keep_releases).each do |r|
+        to_remove = old_releases.reverse.slice(0, old_releases.length - @conf.keep_releases) || []
+
+        to_remove.each do |r|
             @logger.info("#{__method__}: Removing old release #{r}")
             FileUtils.rm_rf( get_path_for_release(r) )
         end
@@ -177,6 +181,8 @@ class Application
     private
 
     @cache = {}
+    
+    # TODO how do we stop git over ssh being interactive?
 
     def get_tags
         @logger.info("#{__method__}: Getting tags from git")
