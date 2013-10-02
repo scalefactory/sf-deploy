@@ -86,11 +86,6 @@ task :run_post_deploy do
     app.run_post_deploy_commands
 end
 
-desc "Show the current release"
-task :current_release do
-    puts app.current_release
-end
-
 desc "Show the current release metadata"
 task :current_metadata do
     puts app.get_metadata_for_current_release.inspect
