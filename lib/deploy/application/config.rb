@@ -1,10 +1,10 @@
 module ScaleFactory
 module Deploy
 
-class Application::ConfigValidationException < Exception
-end
-
 class Application::Config
+
+    class ConfigValidationException < Exception
+    end
 
     def initialize( config_file )
 
@@ -89,6 +89,16 @@ class Application::Config
                 :transform => Proc.new{ |x|
                     x.to_i
                 }
+            },
+
+            'post_deploy_commands' => {
+                :require => false,
+                :default => [],
+                :validate => Proc.new { |x|
+                    unless x.is_a?(Array)
+                        raise ConfigValidationException("Must be an array")
+                    end
+                }
             }
 
         }
@@ -111,7 +121,7 @@ class Application::Config
             if rules.has_key?(:validate) and @configuration.has_key?( key )
                 begin
                     rules[:validate].call( @configuration[key] )
-                rescue ScaleFactory::Deploy::ConfigValidationException => e
+                rescue ConfigValidationException => e
                     config_problems.push("'#{key}' invalid: #{e.message}")
                 end
             end

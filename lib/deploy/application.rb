@@ -5,13 +5,22 @@ require 'fileutils'
 require 'pathname'
 require 'logger'
 require 'open3'
+require 'yaml'
 
 class Application
 
+    class ShellCommandException < Exception
+    end
+
     def initialize( config_file )
-        @conf   = Application::Config.new( config_file )
-        @logger = Logger.new(STDERR)
-        @logger.level = Logger::DEBUG
+        @conf         = Application::Config.new( config_file )
+        @logger       = Logger.new(STDERR)
+        @logger.level = Logger::INFO
+        @cache        = {}
+    end
+
+    def logger
+        @logger
     end
 
     def create_clone_path
@@ -42,13 +51,13 @@ class Application
         @cache['tags'] ||= get_tags
     end
 
-    def deploy_tag( tag )
+    def branches
+        @cache['branches'] || get_branches
+    end
 
-        update_git_clone
+    def deploy_sha( sha, metadata = {} )
 
-        unless tags.index(tag)
-            raise "The tag '#{tag}' doesn't exist in the repo at '#{@conf.git_repo}'"
-        end
+        @logger.info("#{__method__}: Deploying #{sha}")
 
         timestamp = Time.now.strftime('%Y%m%d%H%M%S')
         deploy_path = get_path_for_release( timestamp )
@@ -61,10 +70,42 @@ class Application
         FileUtils.mkdir_p( deploy_path ) 
 
         @logger.info("#{__method__}: Using 'git archive' to extract code for deploy")
-        logged_system( "git archive #{tag} --remote=#{@conf.clone_path} | tar -C #{deploy_path} -xv" )
+        logged_system( "git archive #{sha} --remote=#{@conf.clone_path} | tar -C #{deploy_path} -xv" )
+
+        @logger.info("#{__method__}: Writing deploy metadata")
+
+        metadata['sha'] = sha
+
+        File.open( "#{deploy_path}/.deploy_metadata", "w" ) do |f|
+            f.write YAML::dump(metadata)
+        end
 
         link_release( timestamp )
         clean_old_releases
+
+    end
+
+    def deploy_tag( tag )
+
+        update_git_clone
+
+        unless tags.index(tag)
+            raise "The tag '#{tag}' doesn't exist in the repo at '#{@conf.git_repo}'"
+        end
+
+        deploy_sha( get_sha_from_ref(tag), { 'tag' => tag })
+
+    end
+
+    def deploy_branch( branch )
+
+        update_git_clone
+
+        unless branches.index(branch)
+            raise "The branch '#{branch}' doesn't exist in the repo at '#{@conf.git_repo}'"
+        end
+
+        deploy_sha( get_sha_from_ref(branch), { 'branch' => branch })
 
     end
 
@@ -85,6 +126,15 @@ class Application
             @logger.info("#{__method__}: No 'current' symlink")
             return nil
         end
+    end
+
+    def get_metadata_for_release( release )
+        deploy_path = get_path_for_release( release )
+        return YAML::load_file( "#{deploy_path}/.deploy_metadata" )
+    end
+
+    def get_metadata_for_current_release
+        get_metadata_for_release( current_release )
     end
 
     def link_release( release )
@@ -114,6 +164,14 @@ class Application
         
     end
 
+    def run_post_deploy_commands
+
+        @conf.post_deploy_commands.each do |command|
+            logged_system("cd #{@conf.deploy_to}/current && #{command}")
+        end
+
+    end
+
 
 
     private
@@ -130,6 +188,23 @@ class Application
         tags
     end
 
+    def get_branches
+        @logger.info("#{__method__}: Getting branches from git")
+        output = `cd #{@conf.clone_path} && git for-each-ref --sort=-committerdate refs/heads/ --format='%(refname:short)'`
+        branches = output.split("\n")
+        branches.each do |b|
+            @logger.debug("#{__method__}: #{b}")
+        end
+        branches
+    end
+
+    def get_sha_from_ref(ref)
+        output = `cd #{@conf.clone_path} && git rev-list -1 #{ref}`
+        sha = output.split("\n").first
+        @logger.info("#{__method__}: SHA sum for #{ref} is #{sha}")
+        sha
+    end
+
     def get_path_for_release( release )
         File.join( @conf.deploy_to, "releases", release )
     end
@@ -144,7 +219,7 @@ class Application
         output = ''
 
         while !stdout.eof?
-            line = stdout.readline
+            line = stdout.readline.chomp
             output << line
             @logger.debug("stout: #{line}")
         end
@@ -152,11 +227,15 @@ class Application
         stdout.close
 
         while !stderr.eof?
-            line = stderr.readline
+            line = stderr.readline.chomp
             @logger.debug("stderr: #{line}")
         end
 
         stderr.close
+
+        unless $? == 0
+            raise ShellCommandException( $? )
+        end
 
         output
 
