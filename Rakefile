@@ -6,12 +6,46 @@ require 'pp'
 require 'deploy/application'
 require 'deploy/application/config'
 
-unless ENV.has_key?('APPLICATION_CONFIG')
-    $stderr.puts "ENV['APPLICATION_CONFIG'] must be set"
-    exit -1
+application_config_base = ENV['APPLICATION_CONFIG_BASE'] || "/etc/sf-deploy.d"
+
+
+class AppShim
+
+    @app = nil
+
+    def set_app(app)
+        @app = app
+    end
+
+    def method_missing(meth, *args, &block)
+
+        if @app.nil?
+            $stderr.puts "You must choose an application by calling one of the application:* tasks"
+            exit -1
+        end
+
+        @app.send(meth, *args, &block)
+    end
+
 end
 
-app = ScaleFactory::Deploy::Application.new( ENV['APPLICATION_CONFIG'] )
+app = AppShim.new
+
+namespace :application do
+
+    Dir.entries( application_config_base ).select{ |f| f =~ /\.yml$/ }.each do |f|
+
+        app_name = f.gsub(/\.yml$/, '')
+
+        desc "Use the application called '#{app_name}'"
+        task app_name.to_s do
+        app.set_app( ScaleFactory::Deploy::Application.new( "#{application_config_base}/#{f}" ) )
+        end
+
+    end
+
+end
+
 
 desc "Create or update the bare git clone for the application"
 task :git_clone do
