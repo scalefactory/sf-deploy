@@ -7,7 +7,7 @@ mco sfdeploy --application <APPLICATION> <ACTION>
 
 the ACTION can be one of:
 
-    git_clone
+    update_git_clone
     show_tags 
     show_branches 
     deploy_tag 
@@ -37,7 +37,7 @@ the ACTION can be one of:
 
     def post_option_parser( configuration )
 
-        valid_actions = %w(git_clone show_tags show_branches deploy_tag deploy_branch run_post_deploy current_metadata)
+        valid_actions = %w(update_git_clone show_tags show_branches deploy_tag deploy_branch run_post_deploy current_metadata)
 
         if ARGV.size < 1
             raise "Please specify an action"

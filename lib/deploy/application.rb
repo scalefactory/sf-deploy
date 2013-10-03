@@ -212,13 +212,13 @@ class Application
 
     def logged_system(*args)
 
-        @logger.debug("#{__method__}: #{args.join(' ')}")
+        @logger.info("#{__method__}: #{args.join(' ')}")
 
         process = IO.popen( args.join(' ') + " </dev/null 2>&1" ) do |io|
 
             io.each do |line|
 
-                @logger.debug( line.chomp )
+                @logger.info( line.chomp )
 
             end
 
@@ -227,7 +227,7 @@ class Application
             @logger.debug( "Exit status: #{$?.to_i}" )
 
             if $? != 0
-                raise ShellCommandException, "Command execution failed"
+                raise ShellCommandException, "Execution of \"#{args.join(' ')}\" failed"
             end
 
         end

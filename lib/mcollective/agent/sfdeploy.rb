@@ -21,7 +21,7 @@ module MCollective
                 end
             end
 
-            %w(git_clone show_tags show_branches deploy_tag deploy_branch run_post_deploy current_metadata).each do |act|
+            %w(update_git_clone show_tags show_branches deploy_tag deploy_branch run_post_deploy current_metadata).each do |act|
 
                 action act do
                     do_action( request[:application], act.to_sym, request, reply )
@@ -42,7 +42,7 @@ module MCollective
 
                 case action
 
-                    when :git_clone
+                    when :update_git_clone
                         application.update_git_clone
 
                     when :show_tags

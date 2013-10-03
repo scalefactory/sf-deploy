@@ -54,7 +54,7 @@ end
 
 
 desc "Create or update the bare git clone for the application"
-task :git_clone do
+task :update_git_clone do
     app.update_git_clone
 end
 

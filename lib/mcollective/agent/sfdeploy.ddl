@@ -6,7 +6,7 @@ metadata  :name         => "sfdeploy",
           :url          => "http://scalefactory.com/",
           :timeout      => 10
 
-action "git_clone", :description => "Create or update the bare git clone for the application" do
+action "update_git_clone", :description => "Create or update the bare git clone for the application" do
     display :always
 end
 
