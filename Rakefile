@@ -40,6 +40,7 @@ namespace :application do
         desc "Use the application called '#{app_name}'"
         task app_name.to_s do
         app.set_app( ScaleFactory::Deploy::Application.new( "#{application_config_base}/#{f}" ) )
+        app.logger = Logger.new( STDERR )
         end
 
     end

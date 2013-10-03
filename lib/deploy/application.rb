@@ -3,25 +3,24 @@ module Deploy
 
 require 'fileutils'
 require 'pathname'
-require 'logger'
 require 'open3'
 require 'yaml'
+require 'syslog-logger'
 
 class Application
 
-    class ShellCommandException < Exception
+    class ShellCommandException < StandardError
     end
 
-    def initialize( config_file )
+    attr_accessor :logger
+
+    def initialize( config_file, logger = nil )
         @conf         = Application::Config.new( config_file )
-        @logger       = Logger.new(STDERR)
+        @logger       = logger || Logger::Syslog.new('sf-deploy')
         @logger.level = Logger::INFO
         @cache        = {}
     end
 
-    def logger
-        @logger
-    end
 
     def create_clone_path
         @logger.info("#{__method__}: Creating directory #{@conf.clone_path}")
@@ -87,8 +86,6 @@ class Application
 
     def deploy_tag( tag )
 
-        update_git_clone
-
         unless tags.index(tag)
             raise "The tag '#{tag}' doesn't exist in the repo at '#{@conf.git_repo}'"
         end
@@ -98,8 +95,6 @@ class Application
     end
 
     def deploy_branch( branch )
-
-        update_git_clone
 
         unless branches.index(branch)
             raise "The branch '#{branch}' doesn't exist in the repo at '#{@conf.git_repo}'"
@@ -219,31 +214,23 @@ class Application
 
         @logger.debug("#{__method__}: #{args.join(' ')}")
 
-        stdin, stdout, stderr = Open3.popen3( args.join(' ') )
-        stdin.close
+        process = IO.popen( args.join(' ') + " </dev/null 2>&1" ) do |io|
 
-        output = ''
+            io.each do |line|
 
-        while !stdout.eof?
-            line = stdout.readline.chomp
-            output << line
-            @logger.debug("stout: #{line}")
+                @logger.debug( line.chomp )
+
+            end
+
+            io.close
+
+            @logger.debug( "Exit status: #{$?.to_i}" )
+
+            if $? != 0
+                raise ShellCommandException, "Command execution failed"
+            end
+
         end
-
-        stdout.close
-
-        while !stderr.eof?
-            line = stderr.readline.chomp
-            @logger.debug("stderr: #{line}")
-        end
-
-        stderr.close
-
-        unless $? == 0
-            raise ShellCommandException( $? )
-        end
-
-        output
 
     end
 
