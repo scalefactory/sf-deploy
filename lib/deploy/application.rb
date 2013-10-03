@@ -214,7 +214,7 @@ class Application
 
         @logger.info("#{__method__}: #{args.join(' ')}")
 
-        process = IO.popen( args.join(' ') + " </dev/null 2>&1" ) do |io|
+        process = IO.popen( args.join(' ') + " 2>&1" ) do |io|
 
             io.each do |line|
 
