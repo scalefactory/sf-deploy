@@ -1,7 +1,6 @@
-$:.push( '/vagrant/deploy/lib' )
 
-require 'deploy/application'
-require 'deploy/application/config'
+require 'sf-deploy/application'
+require 'sf-deploy/application/config'
 require 'stringio'
 require 'logger'
 
