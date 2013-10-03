@@ -1,12 +1,10 @@
 #!/usr/bin/env ruby
 
-$:.push( File.join( File.dirname(__FILE__), '..', 'lib' ) )
-
 require 'rubygems'
 require 'optparse'
 
-require 'deploy/application'
-require 'deploy/application/config'
+require 'sf-deploy/application'
+require 'sf-deploy/application/config'
 
 application_config_base = ENV['APPLICATION_CONFIG_BASE'] || "/etc/sf-deploy.d"
 
