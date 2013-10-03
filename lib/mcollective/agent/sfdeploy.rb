@@ -10,65 +10,57 @@ module MCollective
         class Sfdeploy < RPC::Agent
 
             def startup_hook
-                @application_config_base = "/etc/sf-deploy.d" # TODO config file
-                @application = {}
-                Dir.entries( @application_config_base ).select{ |f| f =~ /\.yml$/ }.each do |f|
-                    Log.info( "Found sfdeploy config: #{@application_config_base}/#{f}" )
-                    app_name = f.gsub(/\.yml$/, '')
-                    @application[app_name] = ScaleFactory::Deploy::Application.new(
-                       "#{@application_config_base}/#{f}"
-                    )
-                end
             end
 
             %w(update_git_clone show_tags show_branches deploy_tag deploy_branch run_post_deploy current_metadata).each do |act|
 
                 action act do
-                    do_action( request[:application], act.to_sym, request, reply )
+
+                    sf_deploy   = config.pluginconf["sfdeploy.binary"] || "sf-deploy"
+                    deploy_user = config.pluginconf["sfdeploy.user"]   || nil
+                     
+                    command = "#{sf_deploy} -a #{request[:application]} -v "
+                    command << "-b #{request[:branch]} " if request[:branch]
+                    command << "-t #{request[:tag]} "    if request[:tag]
+                    command << act
+
+                    if deploy_user
+                        to_run = "su #{deploy_user} -c \"#{command}\""
+                    else
+                        to_run = command
+                    end
+
+                    Log.debug( to_run )
+
+                    if act == 'show_tags'
+
+                        out = ""
+                        reply[:status] = run( to_run, :stdout => out, :stderr => :err, :chomp => true )
+                        reply[:tags]   = out.split("\n")
+
+                    elsif act == 'show_branches'
+
+                        out = ""
+                        reply[:status]   = run( to_run, :stdout => out, :stderr => :err, :chomp => true )
+                        reply[:branches] = out.split("\n")
+
+                    elsif act == 'current_metadata'
+
+                        out = ""
+                        reply[:status]   = run( to_run, :stdout => out, :stderr => :err, :chomp => true )
+                        reply[:metadata] = out
+
+                    else
+
+                        reply[:status] = run( to_run, :stdout => :out, :stderr => :err, :chomp => true )
+
+                    end
+                        
+                    reply
+
                 end
 
             end
-
-            private
-
-            def do_action( application_name, action, request, reply )
-
-                unless @application.has_key?( application_name )
-                    reply.fail "No such application '#{application_name}'"
-                    return reply
-                end
-
-                application = @application[application_name]
-
-                case action
-
-                    when :update_git_clone
-                        application.update_git_clone
-
-                    when :show_tags
-                        reply[:tags] = application.tags
-
-                    when :show_branches
-                        reply[:branches] = application.branches
-
-                    when :deploy_tag
-                        application.deploy_tag request[:tag]
-
-                    when :deploy_branch
-                        application.deploy_branch request[:branch]
-
-                    when :run_post_deploy
-                        application.run_post_deploy_commands
-
-                    when :current_metadata
-                        reply[:metadata] = application.get_metadata_for_current_release
-
-                end
-
-                reply
-
-            end
-
 
         end
     end

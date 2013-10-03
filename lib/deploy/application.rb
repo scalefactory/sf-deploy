@@ -3,9 +3,8 @@ module Deploy
 
 require 'fileutils'
 require 'pathname'
-require 'open3'
 require 'yaml'
-require 'syslog-logger'
+require 'logger'
 
 class Application
 
@@ -16,7 +15,7 @@ class Application
 
     def initialize( config_file, logger = nil )
         @conf         = Application::Config.new( config_file )
-        @logger       = logger || Logger::Syslog.new('sf-deploy')
+        @logger       = logger || Logger.new(STDERR)
         @logger.level = Logger::INFO
         @cache        = {}
     end
