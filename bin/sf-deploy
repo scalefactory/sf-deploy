@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+
+$:.push( File.join( File.dirname(__FILE__), '..', 'lib' ) )
+
+require 'rubygems'
+require 'optparse'
+
+require 'deploy/application'
+require 'deploy/application/config'
+
+application_config_base = ENV['APPLICATION_CONFIG_BASE'] || "/etc/sf-deploy.d"
+
+valid_actions = %w(update_git_clone show_tags show_branches deploy_tag  deploy_branch run_post_deploy current_metadata)
+
+options = {}
+optparse = OptionParser.new do |opts|
+
+    opts.banner = <<-EO_BANNER
+
+Usage: sf-deploy --application <APPLICATION> [options] <action>+
+
+Valid actions are:
+    #{valid_actions.join("\n    ")+"\n"}
+    EO_BANNER
+
+
+    options[:application] = nil
+    opts.on('-a', '--application APPLICATION', 'Name of application to deploy') do |a|
+        options[:application] = a
+    end
+
+    options[:branch] = nil
+    opts.on('-b', '--branch BRANCH', 'Branch ID to deploy') do |b|
+        options[:branch] = b
+    end
+
+    options[:tag] = nil
+    opts.on('-t', '--tag TAG', 'Tag to deploy') do |t|
+        options[:tag] = t
+    end
+
+    options[:verbose] = false
+    opts.on('-v', '--verbose', 'Enable verbose logging') do
+        options[:verbose] = true
+    end
+
+end
+
+if ARGV.count == 0
+    $stderr.puts "No options given"
+    $stderr.puts optparse
+    exit 2
+end
+
+begin
+
+
+    optparse.parse!
+
+    if ARGV.count == 0
+        $stderr.puts "You must give one or more actions"
+        $stderr.puts optparse
+        exit 2
+    end
+
+    actions = ARGV
+
+    if options[:application].nil?
+        $stderr.puts "You must give an --application"
+        $stderr.puts optparse
+        exit 2
+    end
+
+    if actions.index('deploy_branch') and options[:branch].nil?
+        $stderr.puts "You must give a --branch when calling deploy_branch"
+        $stderr.puts optparse
+        exit 2
+    end
+
+    if actions.index('deploy_tag') and options[:tag].nil?
+        $stderr.puts "You must give a --tag when calling deploy_tag"
+        $stderr.puts optparse
+        exit 2
+    end
+
+    actions.each do |a|
+        unless valid_actions.index(a)
+            $stderr.puts "The action '#{a}' is not valid"
+            $stderr.puts optparse
+            exit 2
+        end  
+    end
+
+end
+
+app = ScaleFactory::Deploy::Application.new( File.join(application_config_base, options[:application]+'.yml' ) )
+app.logger = Logger.new( STDERR )
+
+if options[:verbose]
+    app.logger.level = Logger::DEBUG
+end
+
+actions.each do |action|
+
+    case action
+
+        when 'update_git_clone'
+            app.update_git_clone
+
+        when 'show_tags'
+            app.tags.each do |t|
+                puts t
+            end
+
+        when 'show_branches'
+            app.branches.each do |b|
+                puts b
+            end
+
+        when 'deploy_tag'
+            app.deploy_tag options[:tag]
+
+        when 'deploy_branch'
+            app.deploy_branch options[:branch]
+
+        when 'run_post_deploy'
+            app.run_post_deploy_commands
+
+        when 'current_metadata'
+            puts app.get_metadata_for_current_release.inspect
+
+    end
+
+end
+
