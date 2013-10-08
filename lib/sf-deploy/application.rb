@@ -57,6 +57,8 @@ class Application
 
         @logger.info("#{__method__}: Deploying #{sha}")
 
+        create_deploy_base_paths
+
         timestamp = Time.now.strftime('%Y%m%d%H%M%S')
         deploy_path = get_path_for_release( timestamp )
 
@@ -69,6 +71,21 @@ class Application
 
         @logger.info("#{__method__}: Using 'git archive' to extract code for deploy")
         logged_system( "git archive #{sha} --remote=#{@conf.clone_path} | tar -C #{deploy_path} -xv" )
+
+        @logger.info("#{__method__}: Linking shared children")
+        @conf.shared_children.each do |c|
+
+            @logger.info("#{__method__}: Linking shared child #{c}")
+
+            if File.exists?( File.join( deploy_path, c ) )
+                @logger.info("#{__method__}: (Deleting existing target '#{c}' from deploy first)")
+                FileUtils.rm_rf( File.join( deploy_path, c ) )
+            end
+
+            File.symlink( File.join( shared_path, c ), File.join( deploy_path, c ) )
+
+        end
+
 
         @logger.info("#{__method__}: Writing deploy metadata")
 
@@ -207,6 +224,24 @@ class Application
 
     def get_path_for_release( release )
         File.join( @conf.deploy_to, "releases", release )
+    end
+    
+    def shared_path
+        File.join( @conf.deploy_to, "shared" )
+    end
+
+    def create_deploy_base_paths
+
+        unless File.exists?( @conf.deploy_to )
+            @logger.info("#{__method__}: Creating #{@conf.deploy_to}")
+            FileUtils.mkdir_p( @conf.deploy_to )
+        end
+
+        unless File.exists?( shared_path )
+            @logger.info("#{__method__}: Creating #{shared_path}")
+            FileUtils.mkdir_p( shared_path )
+        end
+
     end
 
     def logged_system(*args)

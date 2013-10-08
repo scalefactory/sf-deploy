@@ -69,7 +69,7 @@ class Application::Config
                 :default  => "/srv/deploy/clones/#{@configuration['name']}",
                 :validate => Proc.new { |x|
                     unless x.start_with?('/')
-                        raise ConfigValidationException("Must be a fully qualified path")
+                        raise ConfigValidationException, "Must be a fully qualified path"
                     end
                 }
             },
@@ -78,7 +78,7 @@ class Application::Config
                 :required => true,
                 :validate => Proc.new { |x|
                     unless x.start_with?('/')
-                        raise ConfigValidationException("Must be a fully qualified path")
+                        raise ConfigValidationException, "Must be a fully qualified path"
                     end
                 }
             },
@@ -96,10 +96,25 @@ class Application::Config
                 :default => [],
                 :validate => Proc.new { |x|
                     unless x.is_a?(Array)
-                        raise ConfigValidationException("Must be an array")
+                        raise ConfigValidationException, "Must be an array"
                     end
                 }
-            }
+            },
+
+            'shared_children' => {
+                :require => false,
+                :default => [],
+                :validate => Proc.new { |x|
+                    unless x.is_a?(Array)
+                        raise ConfigValidationException, "Must be an array"
+                    end
+                    x.each do |p|
+                        if p.start_with?('/', '../')
+                            raise ConfigValidationException, "Shared child #{p} is not a relative path"
+                        end
+                    end
+                }
+            },
 
         }
 
