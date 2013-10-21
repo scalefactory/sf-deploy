@@ -93,10 +93,10 @@ class Application::Config
 
             'post_deploy_commands' => {
                 :require => false,
-                :default => [],
+                :default => {},
                 :validate => Proc.new { |x|
-                    unless x.is_a?(Array)
-                        raise ConfigValidationException, "Must be an array"
+                    unless x.is_a?(Hash)
+                        raise ConfigValidationException, "Must be a Hash"
                     end
                 }
             },

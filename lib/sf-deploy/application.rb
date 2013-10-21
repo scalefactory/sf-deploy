@@ -179,10 +179,17 @@ class Application
         
     end
 
-    def run_post_deploy_commands
+    def run_post_deploy_commands( groups )
 
-        @conf.post_deploy_commands.each do |command|
-            logged_system("cd #{@conf.deploy_to}/current && #{command}")
+        groups.each do | group |
+            @conf.post_deploy_commands.each do |group_key,group_val|
+                if group_key == group
+                    @logger.info("#{__method__}: Running #{group_key} commands")
+                    group_val.each do |command|
+                        logged_system("cd #{@conf.deploy_to}/current && #{command}")
+                    end
+                end
+            end
         end
 
     end
