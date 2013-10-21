@@ -181,15 +181,19 @@ class Application
 
     def run_post_deploy_commands( groups )
 
-        groups.each do | group |
-            @conf.post_deploy_commands.each do |group_key,group_val|
+        groups.each do |group|
+            if ! @conf.post_deploy_commands.has_key?(group)
+                @logger.error("#{__method__}: #{group} group does not exist")
+            end
+        end
+
+        @conf.post_deploy_commands.each do |group_key,group_val|
+            groups.each do | group |
                 if group_key == group
                     @logger.info("#{__method__}: Running #{group_key} commands")
                     group_val.each do |command|
                         logged_system("cd #{@conf.deploy_to}/current && #{command}")
                     end
-                else
-                    @logger.info("#{__method__}: Specified group - #{group} - does not exist in run_post_deploy commands")
                 end
             end
         end
