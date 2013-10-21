@@ -188,6 +188,8 @@ class Application
                     group_val.each do |command|
                         logged_system("cd #{@conf.deploy_to}/current && #{command}")
                     end
+                else
+                    @logger.info("#{__method__}: Specified group - #{group} - does not exist in run_post_deploy commands")
                 end
             end
         end
