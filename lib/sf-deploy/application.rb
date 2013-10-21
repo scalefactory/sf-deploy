@@ -189,11 +189,11 @@ class Application
         end
 
         if missing_groups.empty?
-            @conf.post_deploy_commands.each do |group_key,group_val|
+            @conf.post_deploy_commands.sort.map do |group_key,group_val|
                 groups.each do | group |
                     if group_key == group
                         @logger.info("#{__method__}: Running #{group_key} commands")
-                        group_val.each do |command|
+                        group_val.sort.each do |command|
                             logged_system("cd #{@conf.deploy_to}/current && #{command}")
                         end
                     end
