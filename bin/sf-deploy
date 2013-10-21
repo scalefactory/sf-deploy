@@ -38,7 +38,7 @@ Valid actions are:
     end
 
     options[:groups] = nil
-    opts.on('-g', '--groups GROUPS', 'Comma seperated list, of groups of commands to run after deployment') do |g|
+    opts.on('-g', '--groups GROUP1,GROUP2', Array, 'Groups of commands to execute after deployment (comma seperated)') do |g|
         options[:groups] = g
     end
 
