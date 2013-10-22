@@ -188,22 +188,22 @@ class Application
             end
         end
 
-        if missing_groups.empty?
-            @conf.post_deploy_commands.sort.map do |group_key,group_val|
-                groups.each do | group |
-                    if group_key == group
-                        @logger.info("#{__method__}: Running #{group_key} commands")
-                        group_val.sort.each do |command|
-                            logged_system("cd #{@conf.deploy_to}/current && #{command}")
-                        end
-                    end
-                end
-            end
-        else
+        unless missing_groups.empty?
             missing_groups.each do |group|
                 @logger.error("#{__method__}: #{group} group does not exist")
             end
             exit 1
+        end
+
+        @conf.post_deploy_commands.sort.map do |group_key,group_val|
+            groups.each do | group |
+                if group_key == group
+                    @logger.info("#{__method__}: Running #{group_key} commands")
+                    group_val.sort.each do |command|
+                        logged_system("cd #{@conf.deploy_to}/current && #{command}")
+                    end
+                end
+            end
         end
 
     end
