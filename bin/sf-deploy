@@ -37,6 +37,11 @@ Valid actions are:
         options[:tag] = t
     end
 
+    options[:groups] = nil
+    opts.on('-g', '--groups GROUP1,GROUP2', Array, 'Groups of commands to execute after deployment (comma seperated)') do |g|
+        options[:groups] = g
+    end
+
     options[:verbose] = false
     opts.on('-v', '--verbose', 'Enable verbose logging') do
         options[:verbose] = true
@@ -77,6 +82,12 @@ begin
 
     if actions.index('deploy_tag') and options[:tag].nil?
         $stderr.puts "You must give a --tag when calling deploy_tag"
+        $stderr.puts optparse
+        exit 2
+    end
+
+    if actions.index('run_post_deploy') and options[:groups].nil?
+        $stderr.puts "You must give --groups when calling run_post_deploy"
         $stderr.puts optparse
         exit 2
     end
@@ -122,7 +133,7 @@ actions.each do |action|
             app.deploy_branch options[:branch]
 
         when 'run_post_deploy'
-            app.run_post_deploy_commands
+            app.run_post_deploy_commands options[:groups]
 
         when 'current_metadata'
             puts app.get_metadata_for_current_release.inspect

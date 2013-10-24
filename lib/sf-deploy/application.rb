@@ -179,10 +179,31 @@ class Application
         
     end
 
-    def run_post_deploy_commands
+    def run_post_deploy_commands( groups )
 
-        @conf.post_deploy_commands.each do |command|
-            logged_system("cd #{@conf.deploy_to}/current && #{command}")
+        missing_groups = []
+        groups.each do |group|
+            if ! @conf.post_deploy_commands.has_key?(group)
+                missing_groups << group
+            end
+        end
+
+        unless missing_groups.empty?
+            missing_groups.each do |group|
+                @logger.error("#{__method__}: #{group} group does not exist")
+            end
+            exit 1
+        end
+
+        @conf.post_deploy_commands.sort.map do |group_key,group_val|
+            groups.each do | group |
+                if group_key == group
+                    @logger.info("#{__method__}: Running #{group_key} commands")
+                    group_val.sort.each do |command|
+                        logged_system("cd #{@conf.deploy_to}/current && #{command}")
+                    end
+                end
+            end
         end
 
     end
