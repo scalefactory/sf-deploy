@@ -21,6 +21,7 @@ module MCollective
                     command = "#{sf_deploy} -a #{request[:application]} -v "
                     command << "-b #{request[:branch]} " if request[:branch]
                     command << "-t #{request[:tag]} "    if request[:tag]
+                    command << "-g #{request[:groups]} " if request[:groups]
                     command << act
 
                     if deploy_user
