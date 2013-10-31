@@ -33,6 +33,10 @@ the ACTION can be one of:
         :arguments      => ["-t", "--tag TAG"],
         :type           => String
 
+    option :groups,
+        :description    => "Groups of post_deploy tasks to run",
+        :arguments      => ["-g", "--groups GROUPS"],
+        :type           => String
 
 
     def post_option_parser( configuration )
@@ -63,6 +67,10 @@ the ACTION can be one of:
             raise "deploy_tag action requires tag argument"
         end
 
+        if configuration[:action] == 'run_post_deploy' and !configuration.include?(:groups)
+            raise "run_post_deploy action requires groups argument"
+        end
+
     end
 
     def main
@@ -76,6 +84,7 @@ the ACTION can be one of:
             :application => configuration[:application],
             :branch      => configuration[:branch],
             :tag         => configuration[:tag],
+            :groups      => configuration[:groups],
             :options     => options
         )
 
