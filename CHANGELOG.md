@@ -1,3 +1,7 @@
+## 0.0.4
+
+ - Change default timeout from 10s to 120s to accommodate long-running deployments
+
 ## 0.0.3
 
  - Change configuration to allow groups of commands to be run in run_post_deploy
