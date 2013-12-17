@@ -4,7 +4,7 @@ metadata  :name         => "sfdeploy",
           :license      => "MIT License",
           :version      => "1.0",
           :url          => "http://scalefactory.com/",
-          :timeout      => 10
+          :timeout      => 120
 
 action "update_git_clone", :description => "Create or update the bare git clone for the application" do
     display :always
