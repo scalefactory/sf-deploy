@@ -1,3 +1,7 @@
+## 0.0.5
+
+ - Configuration to support copying absent shared children on the first run
+
 ## 0.0.4
 
  - Change default timeout from 10s to 120s to accommodate long-running deployments

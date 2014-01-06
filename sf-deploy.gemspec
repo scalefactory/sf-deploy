@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
     s.name        = 'sf-deploy'
-    s.version     = '0.0.4'
-    s.date        = '2013-12-17'
+    s.version     = '0.0.5'
+    s.date        = '2014-01-06'
     s.summary     = 'Pull-based deployment tool'
     s.description = 'Pull-based software deployment from git using mcollective'
     s.authors     = [ 'Jon Topper' ]
