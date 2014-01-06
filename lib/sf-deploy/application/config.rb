@@ -116,6 +116,11 @@ class Application::Config
                 }
             },
 
+            'copy_absent_shared_children' => {
+                :require => false,
+                :default => false,
+	    },
+
         }
 
     end

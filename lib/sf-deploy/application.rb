@@ -75,6 +75,11 @@ class Application
         @logger.info("#{__method__}: Linking shared children")
         @conf.shared_children.each do |c|
 
+            if !File.exists?( File.join( shared_path, c ) ) and @conf.copy_absent_shared_children
+                @logger.info("#{__method__}: Absent shared child #{c} - copying from checkout")
+                FileUtils.cp_r( File.join( deploy_path, c ), File.join( shared_path, c ) )
+            end
+
             @logger.info("#{__method__}: Linking shared child #{c}")
 
             if File.exists?( File.join( deploy_path, c ) )
