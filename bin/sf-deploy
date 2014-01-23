@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
 require 'optparse'
+
+require 'syslog/logger'
 
 require 'sf-deploy/application'
 require 'sf-deploy/application/config'
@@ -45,6 +46,11 @@ Valid actions are:
     options[:verbose] = false
     opts.on('-v', '--verbose', 'Enable verbose logging') do
         options[:verbose] = true
+    end
+
+    options[:syslog] = false
+    opts.on('-s', '--syslog', 'Log (only) via syslog') do
+        options[:syslog] = true
     end
 
 end
@@ -102,8 +108,14 @@ begin
 
 end
 
+if options[:syslog]
+    logger = Syslog::Logger.new 'sf-deploy'
+else
+    logger = Logger.new( STDERR )
+end
+
 app = ScaleFactory::Deploy::Application.new( File.join(application_config_base, options[:application]+'.yml' ) )
-app.logger = Logger.new( STDERR )
+app.logger = logger
 
 if options[:verbose]
     app.logger.level = Logger::DEBUG

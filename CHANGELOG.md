@@ -1,3 +1,8 @@
+## 0.0.6
+
+ - Configuration to support logging to syslog instead of STDERR
+ - mco agent modified to only use syslog logging
+
 ## 0.0.5
 
  - Configuration to support copying absent shared children on the first run

@@ -18,7 +18,7 @@ module MCollective
                     sf_deploy   = config.pluginconf["sfdeploy.binary"] || "sf-deploy"
                     deploy_user = config.pluginconf["sfdeploy.user"]   || nil
                      
-                    command = "#{sf_deploy} -a #{request[:application]} -v "
+                    command = "#{sf_deploy} -a #{request[:application]} -v -s "
                     command << "-b #{request[:branch]} " if request[:branch]
                     command << "-t #{request[:tag]} "    if request[:tag]
                     command << "-g #{request[:groups]} " if request[:groups]

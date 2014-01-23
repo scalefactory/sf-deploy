@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
     s.name        = 'sf-deploy'
-    s.version     = '0.0.5'
-    s.date        = '2014-01-06'
+    s.version     = '0.0.6'
+    s.date        = '2014-01-23'
     s.summary     = 'Pull-based deployment tool'
     s.description = 'Pull-based software deployment from git using mcollective'
     s.authors     = [ 'Jon Topper' ]
@@ -22,4 +22,7 @@ Gem::Specification.new do |s|
     s.executables << 'sf-deploy'
     s.homepage    = 'http://github.com/scalefactory/sf-deploy'
     s.require_path = 'lib'
+
+    s.add_runtime_dependency 'SyslogLogger', '~> 2.0'
+
 end
